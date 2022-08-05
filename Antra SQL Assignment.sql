@@ -431,5 +431,36 @@ ORDER BY [Year];
 
 
 -- Problem 20
+USE WideWorldImporters
+GO
+DROP FUNCTION IF EXISTS total_order
+GO
+CREATE FUNCTION total_order( @OrderID INT )
+RETURNS FLOAT AS
+BEGIN
+        DECLARE @total_order FLOAT
+        SELECT @total_order = ISNULL(SUM(Quantity * UnitPrice * (1 + TaxRate/100)), 0)
+        FROM Sales.OrderLines
+        WHERE OrderID = @OrderID
+        RETURN @total_order
+END
+
+GO
+SELECT InvoiceID, dbo.total_order(OrderID) AS 'TotalOrder'
+FROM Sales.Invoices
+
+-- Problem 21
+USE WideWorldImporters
+GO
+DROP SCHEMA IF EXISTS ods
+GO
+CREATE SCHEMA ods;
+GO
+CREATE TABLE ods.Orders(
+    OrderID INT PRIMARY KEY
+    OrderDate DATE,
+    OrderTotal FLOAT,
+    CustomerID INT
+)
 
 
