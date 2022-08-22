@@ -71,7 +71,7 @@ raw_movies_data_df = (
 
 # COMMAND ----------
 
-raw_movies_data_df.show()
+raw_movies_data_df.show(truncate = 60)
 
 # COMMAND ----------
 
@@ -149,7 +149,7 @@ LOCATION "{bronzePath}"
 
 # COMMAND ----------
 
-raw_movies_data_df.show()
+raw_movies_data_df.show(truncate = 60)
 
 # COMMAND ----------
 
