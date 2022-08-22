@@ -58,10 +58,10 @@ dbutils.fs.rm(bronzePath, recurse=True)
 
 # COMMAND ----------
 
-kafka_schema = "value STRING"
-
 raw_movies_data_df = (
-    spark.read.format("text").schema(kafka_schema).load(rawPath)
+    spark.read.option("multiline", "true")
+    .option("inferSchema", "true")
+    .json(rawPath)
 )
 
 # COMMAND ----------
@@ -71,7 +71,7 @@ raw_movies_data_df = (
 
 # COMMAND ----------
 
-display(raw_movies_data_df)
+raw_movies_data_df.show()
 
 # COMMAND ----------
 
@@ -88,7 +88,7 @@ display(raw_movies_data_df)
 from pyspark.sql.functions import current_timestamp, lit
 
 raw_movies_data_df = raw_movies_data_df.select(
-    "value",
+    "movie",
     lit("antra.sep.databatch.movieshop").alias("datasource"),
     lit("new").alias("status"),
     current_timestamp().alias("ingesttime"),
@@ -110,7 +110,7 @@ raw_movies_data_df = raw_movies_data_df.select(
 from pyspark.sql.functions import col
 
 (
-  raw_movies_data_df.select("datasource", "ingesttime", "value", "status", col("ingestdate").alias("p_ingestdate"))
+  raw_movies_data_df.select("datasource", "ingesttime", "movie", "status", col("ingestdate").alias("p_ingestdate"))
     .write.format("delta")
     .mode("append")
     .partitionBy("p_ingestdate")
@@ -149,10 +149,7 @@ LOCATION "{bronzePath}"
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC 
-# MAGIC SELECT *
-# MAGIC FROM movies_bronze
+raw_movies_data_df.show()
 
 # COMMAND ----------
 
