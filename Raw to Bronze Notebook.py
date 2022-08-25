@@ -20,12 +20,6 @@
 
 # COMMAND ----------
 
-dbutils.fs.rm(rawPath, recurse=True)
-
-dbutils.fs.rm(f"/FileStore/tables/sep/movies.json", recurse=True)
-
-# COMMAND ----------
-
 from pyspark.sql.functions import explode, col
 movie_raw = spark.read.json(path = f"/FileStore/tables/sep/*", multiLine = True)
 movie_raw = movie_raw.select("movie", explode("movie"))
