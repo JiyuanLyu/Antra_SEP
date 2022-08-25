@@ -1,7 +1,10 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Raw to Bronze Notebook
-# MAGIC In this notebook, I turned 8 movie JSON files into a single bronze delta table.
+# MAGIC # Bronze to Silver - ETL into a Silver Delta Table
+# MAGIC In this notebook, I developed the Bronze to Silver Step by:
+# MAGIC 
+# MAGIC 1. Extract and Transform the Raw string to columns
+# MAGIC 2. Load this data into Silver Table
 
 # COMMAND ----------
 
@@ -15,17 +18,25 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Merging JSON files
-# MAGIC First, we need to merge all the movie JSON files into one JSON file.
+# MAGIC ## Import Operation Functions
 
 # COMMAND ----------
 
-from pyspark.sql.functions import explode, col
-movie_raw = spark.read.json(path = f"/FileStore/tables/sep/*", multiLine = True)
-movie_raw = movie_raw.select("movie", explode("movie"))
-movie_raw = movie_raw.drop(col("movie")).toDF('movie')
+# MAGIC %run ./includes/main/python/operations
 
-display(movie_raw)
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Display the Files in the Bronze Path
+
+# COMMAND ----------
+
+# MAGIC %run ./includes/main/python/operations
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Display the raw data
 
 # COMMAND ----------
 

@@ -7,3 +7,4 @@
 dataPipelinePath = f"/dbfs/FileStore/tables/sep/"
 rawPath = dataPipelinePath + "raw/"
 bronzePath = dataPipelinePath + "bronze/"
+silverPath = dataPipelinePath + "silver/"
