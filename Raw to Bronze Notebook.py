@@ -20,7 +20,7 @@
 
 # COMMAND ----------
 
-from pyspark.sql.functions import explode, col
+from pyspark.sql.functions import explode, col, to_json
 movie_raw = spark.read.json(path = f"/FileStore/tables/sep/*", multiLine = True)
 #movie_raw = spark.read.json(path = dataPipelinePath + f"*", multiLine = True)
 movie_raw = movie_raw.select("movie", explode("movie"))
@@ -63,11 +63,21 @@ movie_raw = movie_raw.select(
 # COMMAND ----------
 
 (
-  movie_raw.select("datasource", "ingesttime", "movie", "status", col("ingestdate").alias("p_ingestdate"))
+  movie_raw.withColumn("movie", to_json("movie"))
+    #.write.format("delta")
+    #.mode("append")
+    #.partitionBy("p_ingestdate")
+    #.save(bronzePath)
+)
+
+# COMMAND ----------
+
+(
+movie_raw.select("datasource", "ingesttime", "movie", "status", col("ingestdate").alias("p_ingestdate"))
     .write.format("delta")
     .mode("append")
     .partitionBy("p_ingestdate")
-    .save(bronzePath)
+         .save(bronzePath)
 )
 
 # COMMAND ----------

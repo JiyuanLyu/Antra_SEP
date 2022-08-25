@@ -35,7 +35,6 @@ display(dbutils.fs.ls(bronzePath))
 
 # COMMAND ----------
 
-movies_bronze = spark.read.load(path = bronzePath).withColumn("movie", to_json("movie"))
 display(movies_bronze)
 
 # COMMAND ----------
@@ -49,7 +48,7 @@ display(movies_bronze)
 # MAGIC ## Write a `movie_bronze_to silver` function
 # MAGIC 
 # MAGIC In this part, I write a function to transform the movie table from bronze delta table to silver delta table.
-# MAGIC 
+# MAGIC Details in `includes/main/python/operation`
 # MAGIC 
 # MAGIC The function will accomplish these two following steps:
 # MAGIC 1. Step 1: Extract the Nested JSON from the `movie` column
@@ -68,7 +67,7 @@ display(movies_silver)
 # MAGIC %md
 # MAGIC ## Create Silver Table for Languages
 # MAGIC 
-# MAGIC Here I write a function called `get_language_table()` to get a look up silver table for `Original Language`.
+# MAGIC Here I write a function called `get_language_table()` to get a look up silver table for `Original Language`. Details in `includes/main/python/operation`
 
 # COMMAND ----------
 
@@ -80,7 +79,7 @@ display(language_silver)
 # MAGIC %md
 # MAGIC ## Create Silver Table for genres
 # MAGIC 
-# MAGIC Here I write a function called `get_genres_table()` to get a look up silver table for `Original Language`.
+# MAGIC Here I write two function to get a look up silver table for `Original Language`. Details in `includes/main/python/operation`
 
 # COMMAND ----------
 
@@ -91,16 +90,20 @@ display(genres_silver)
 
 # MAGIC %md
 # MAGIC ## Update movie silver table with two look-up tables
+# MAGIC 
+# MAGIC 
+# MAGIC Two problem need to be solve:
+# MAGIC - for the language column in movie table, need to be replaced by the language_id from language look-up table
+# MAGIC - for the genres column in movie table, delete all the char but not the numbers, the ideal datatype for this column should be array holding integers
 
 # COMMAND ----------
 
-movies_silver.join(language_silver, movies_silver("OriginalLanguage") == language_silver("OriginalLanguage"), "right")
+# Didn't complete
+#movies_silver.join(language_silver, movies_silver("OriginalLanguage") == language_silver("OriginalLanguage"), "right"
 
 # COMMAND ----------
 
-for i in range(language_silver.count()):
-    print(language_silver.collect()[i][1])
-#movies_silver.select("OriginalLanguage").filter(movies_silver.OriginalLanguage )
+
 
 # COMMAND ----------
 
@@ -108,6 +111,8 @@ for i in range(language_silver.count()):
 # MAGIC ## Verify the Schema of movie silver with an Assertion
 # MAGIC 
 # MAGIC Now use an assertion to check if the schema is correct for now. 
+# MAGIC 
+# MAGIC Note: Need to replace the look-up table variables here.
 
 # COMMAND ----------
 
@@ -140,6 +145,184 @@ assert movies_silver.schema == _parse_datatype_string(
 """
 )
 print("Assertion passed.")
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC # Quarantine the Bad Data
+# MAGIC 
+# MAGIC 
+# MAGIC Some movies have a negative `runtime` value, therefore mark the negative value as `quarantined` and split the data.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Split the silver dataframe
+
+# COMMAND ----------
+
+movies_silver_clean = movies_silver.filter(movies_silver.RunTime >= 0)
+movies_silver_quarantined = movies_silver.filter(movies_silver.RunTime < 0)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Display the Quarantined Records
+
+# COMMAND ----------
+
+display(movies_silver_quarantined)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC %md
+# MAGIC ## WRITE Clean Batch to a Silver Table
+# MAGIC 
+# MAGIC Here I write `movies_silver_clean` to the Silver table path, `silverPath`.
+# MAGIC 
+# MAGIC Note:
+# MAGIC 1. Use format, `"delta"`
+# MAGIC 1. Use mode `"append"`.
+# MAGIC 1. Do **NOT** include the `movie` column.
+# MAGIC 1. Partition by `"ReleaseYear"`.
+
+# COMMAND ----------
+
+(
+    movies_silver_clean.select(
+        "BackdropUrl", "Budget", "CreatedBy", "CreatedDate",
+        "Id", "ImdbUrl", "OriginalLanguage", "Overview",
+        "PosterUrl", "Price", "ReleaseTime", "ReleaseDate",
+        "ReleaseYear", "Revenue", "RunTime", "Tagline",
+        "Title", "TmdbUrl", "UpdatedBy", "UpdatedDate", "genres"
+    )
+    .write.format("delta")
+    .mode("append")
+    .partitionBy("ReleaseYear")
+    .save(silverPath)
+)
+
+# COMMAND ----------
+
+spark.sql(
+    """
+DROP TABLE IF EXISTS movies_silver
+"""
+)
+
+spark.sql(
+    f"""
+CREATE TABLE movies_silver
+USING DELTA
+LOCATION "{silverPath}"
+"""
+)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Verify the Schema with an Assertion
+
+# COMMAND ----------
+
+from pyspark.sql.types import _parse_datatype_string
+
+silverTable = spark.read.table("movies_silver")
+expected_schema = """
+   movie STRING,
+   BackdropUrl STRING,
+   Budget DOUBLE,
+   CreatedBy TIMESTAMP,
+   CreatedDate STRING,
+   Id LONG,
+   ImdbUrl STRING,
+   OriginalLanguage STRING,
+   Overview STRING,
+   PosterUrl STRING,
+   Price DOUBLE,
+   ReleaseTime TIMESTAMP,
+   ReleaseDate DATE,
+   ReleaseYear DATE,
+   Revenue DOUBLE,
+   RunTime LONG,
+   Tagline STRING,
+   Title STRING,
+   TmdbUrl STRING,
+   UpdatedBy TIMESTAMP,
+   UpdatedDate TIMESTAMP,
+   genres STRING
+"""
+
+assert silverTable.schema == _parse_datatype_string(
+    expected_schema
+), "Schemas do not match"
+print("Assertion passed.")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC 
+# MAGIC SELECT * FROM movies_silver
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Update Bronze table to Reflect the Loads
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Update Clean Records
+# MAGIC 
+# MAGIC Here I'll use the `movie` column in the `movies_silver_clean` DataFrame to match the `movie` column in the `movies_bronze` table.
+
+# COMMAND ----------
+
+from delta.tables import DeltaTable
+
+bronzeTable = DeltaTable.forPath(spark, bronzePath)
+silverAugmented = movies_silver_clean.withColumn("status", lit("loaded"))
+
+update_match = "bronze.movie = clean.movie"
+update = {"status": "clean"}
+
+(
+    bronzeTable.alias("bronze")
+    .merge(silverAugmented.alias("clean"), update_match)
+    .whenMatchedUpdate(set=update)
+    .execute()
+)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Update Quarantined Records
+# MAGIC 
+# MAGIC The quarantined records will be marked as `"quarantined"` in the `status` column.
+# MAGIC 
+# MAGIC Same as clean record,  I'll use the `movie` column in the `movies_silver_clean` DataFrame to match the `movie` column in the `movies_bronze` table.
+
+# COMMAND ----------
+
+silverAugmented = movies_silver_quarantined.withColumn(
+    "status", lit("quarantined")
+)
+
+update_match = "bronze.movie = quarantine.movie"
+update = {"status": "quarantine.status"}
+
+(
+    bronzeTable.alias("bronze")
+    .merge(silverAugmented.alias("quarantine"), update_match)
+    .whenMatchedUpdate(set=update)
+    .execute()
+)
 
 # COMMAND ----------
 

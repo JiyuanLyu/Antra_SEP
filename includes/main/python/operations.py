@@ -1,5 +1,5 @@
 # Databricks notebook source
-from pyspark.sql.functions import to_json, from_json, col, trunc, monotonically_increasing_id
+from pyspark.sql.functions import to_json, from_json, col, trunc, monotonically_increasing_id, lit
 from pyspark.sql import DataFrame
 
 # COMMAND ----------
