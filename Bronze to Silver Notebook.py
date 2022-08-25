@@ -35,6 +35,7 @@ display(dbutils.fs.ls(bronzePath))
 
 # COMMAND ----------
 
+movies_bronze = spark.read.load(path = bronzePath).withColumn("movie", to_json("movie"))
 display(movies_bronze)
 
 # COMMAND ----------

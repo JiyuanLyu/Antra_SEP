@@ -77,7 +77,7 @@ movie_raw.select("datasource", "ingesttime", "movie", "status", col("ingestdate"
     .write.format("delta")
     .mode("append")
     .partitionBy("p_ingestdate")
-         .save(bronzePath)
+    .save(bronzePath)
 )
 
 # COMMAND ----------
