@@ -20,25 +20,12 @@
 
 # COMMAND ----------
 
-import json
+from pyspark.sql.functions import explode, col
+movie_raw = spark.read.json(path = f"/FileStore/tables/sep/*", multiLine = True)
+movie_raw = movie_raw.select("movie", explode("movie"))
+movie_raw = movie_raw.drop(col("movie")).toDF('movie')
 
-# Create a JSON file for merging
-movies = {"movie": []}
-for i in range(8):
-    with open(dataPipelinePath + f"movie_{i}.json") as f:
-        data = json.load(f)
-        movies["movie"].append(data["movie"])
-
-dbutils.fs.put(rawPath, json.dumps(movies, indent=2), True)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Display the Files in the Raw Path
-
-# COMMAND ----------
-
-display(dbutils.fs.ls(rawPath))
+display(movie_raw)
 
 # COMMAND ----------
 
@@ -52,26 +39,7 @@ dbutils.fs.rm(bronzePath, recurse=True)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Ingest raw data
-# MAGIC 
-# MAGIC Here we use a stream server like `Kafka` to streams files from source directory and write each line as a string to the Bronze table.
-
-# COMMAND ----------
-
-raw_movies_data_df = (
-    spark.read.option("multiline", "true")
-    .option("inferSchema", "true")
-    .json(rawPath)
-)
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC ## Display the raw data
-
-# COMMAND ----------
-
-raw_movies_data_df.show(truncate = 60)
 
 # COMMAND ----------
 
@@ -87,7 +55,7 @@ raw_movies_data_df.show(truncate = 60)
 
 from pyspark.sql.functions import current_timestamp, lit
 
-raw_movies_data_df = raw_movies_data_df.select(
+movie_raw = movie_raw.select(
     "movie",
     lit("antra.sep.databatch.movieshop").alias("datasource"),
     lit("new").alias("status"),
@@ -107,10 +75,8 @@ raw_movies_data_df = raw_movies_data_df.select(
 
 # COMMAND ----------
 
-from pyspark.sql.functions import col
-
 (
-  raw_movies_data_df.select("datasource", "ingesttime", "movie", "status", col("ingestdate").alias("p_ingestdate"))
+  movie_raw.select("datasource", "ingesttime", "movie", "status", col("ingestdate").alias("p_ingestdate"))
     .write.format("delta")
     .mode("append")
     .partitionBy("p_ingestdate")
@@ -149,7 +115,7 @@ LOCATION "{bronzePath}"
 
 # COMMAND ----------
 
-raw_movies_data_df.show(truncate = 60)
+display(movie_raw)
 
 # COMMAND ----------
 
