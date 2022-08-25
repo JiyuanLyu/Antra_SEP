@@ -22,6 +22,7 @@
 
 from pyspark.sql.functions import explode, col
 movie_raw = spark.read.json(path = f"/FileStore/tables/sep/*", multiLine = True)
+#movie_raw = spark.read.json(path = dataPipelinePath + f"*", multiLine = True)
 movie_raw = movie_raw.select("movie", explode("movie"))
 movie_raw = movie_raw.drop(col("movie")).toDF('movie')
 
