@@ -35,7 +35,7 @@ display(dbutils.fs.ls(bronzePath))
 
 # COMMAND ----------
 
-movies_bronze = spark.read.load(path = bronzePath)#.withColumn("movie", to_json("movie"))
+movies_bronze = spark.read.load(path = bronzePath)
 display(movies_bronze)
 
 # COMMAND ----------
@@ -134,38 +134,6 @@ from pyspark.sql.types import _parse_datatype_string
 
 assert movies_silver.schema == _parse_datatype_string(
     """
-    movie STRING,
-    BackdropUrl STRING,
-    Budget DOUBLE,
-    CreatedBy TIMESTAMP,
-    CreatedDate STRING,
-    Id LONG,
-    ImdbUrl STRING,
-    Overview STRING,
-    PosterUrl STRING,
-    Price DOUBLE,
-    ReleaseTime TIMESTAMP,
-    ReleaseDate DATE,
-    ReleaseYear DATE,
-    Revenue DOUBLE,
-    RunTime LONG,
-    Tagline STRING,
-    Title STRING,
-    TmdbUrl STRING,
-    UpdatedBy TIMESTAMP,
-    UpdatedDate TIMESTAMP,
-    movie_genre_junction_id long,
-    Language_Id long
-    """
-)
-print("Assertion passed.")
-
-# COMMAND ----------
-
-from pyspark.sql.types import _parse_datatype_string
-
-assert movies_silver.schema == _parse_datatype_string(
-    """
     movie string,
     BackdropUrl string,
     Budget double,
@@ -233,6 +201,10 @@ display(movies_silver_quarantined)
 # MAGIC 1. Use mode `"append"`.
 # MAGIC 1. Do **NOT** include the `movie` column.
 # MAGIC 1. Partition by `"ReleaseYear"`.
+
+# COMMAND ----------
+
+#dbutils.fs.rm(bronzePath, recurse=True)
 
 # COMMAND ----------
 
@@ -338,23 +310,6 @@ update = {"status": "clean.status"}
     .whenMatchedUpdate(set = update)
     .execute()
 )
-
-# COMMAND ----------
-
-movies_bronze = spark.read.load(path = bronzePath)
-movies_bronze.printSchema()
-
-silverAugmented.printSchema()
-
-# COMMAND ----------
-
-from pyspark.sql import DataFrame
-movies_silver_clean.printSchema()
-silverAugmented.printSchema()
-
-# COMMAND ----------
-
-
 
 # COMMAND ----------
 

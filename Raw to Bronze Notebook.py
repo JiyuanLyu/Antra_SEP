@@ -69,17 +69,8 @@ movie_raw = movie_raw.select(
 
 # COMMAND ----------
 
-#movie_raw = movie_raw.withColumn("movie", to_json("movie"))
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
 (
 movie_raw.select("datasource", "ingesttime", "movie", "status", col("ingestdate").alias("p_ingestdate"))
-    #.withColumn("movie", to_json("movie"))
     .write.format("delta")
     .mode("append")
     .partitionBy("p_ingestdate")
@@ -126,7 +117,7 @@ display(movie_raw)
 
 # COMMAND ----------
 
-movies_bronze = spark.read.load(path = bronzePath)#.withColumn("movie", to_json("movie"))
+movies_bronze = spark.read.load(path = bronzePath)
 display(movies_bronze)
 
 # COMMAND ----------
