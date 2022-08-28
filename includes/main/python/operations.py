@@ -144,3 +144,35 @@ def get_genres_table(g1: DataFrame) -> DataFrame:
     genres_silver = genres_silver.withColumn("genres_Id", col("genres_Id").cast("integer")).sort("genres_Id")
     
     return(genres_silver)
+
+# COMMAND ----------
+
+from pyspark.sql.types import ArrayType, StructType, StructField, IntegerType, StringType, DoubleType
+from pyspark.sql.functions import col, udf, explode, regexp_replace
+
+zip_ = udf(lambda x, y: list(zip(x, i) for i in y),
+           ArrayType(StructType([
+               StructField("first", IntegerType()),
+               StructField("second", StringType())
+           ]))
+          )
+
+# COMMAND ----------
+
+def get_movie_genre_junction_table(movies_silver: DataFrame) -> DataFrame:
+    test_ms = movies_silver
+    #test_ms = test_ms.withColumn("movie_genre_junction_id", monotonically_increasing_id()+1)
+
+    mgj_1 = test_ms.select("movie_genre_junction_id", "genres", split(col("genres"), "},")).withColumn("genre", col("split(genres, },, -1)")).drop("genres", "split(genres, },, -1)")
+    mgj_2 = mgj_1.select("movie_genre_junction_id", "genre").withColumn("genre", explode("genre")).withColumn("genreId", regexp_replace("genre","\\D", "")).drop("genre")
+    
+    return(mgj_2)
+
+# COMMAND ----------
+
+def set_df_columns_nullable(spark, df, column_list, nullable=True):
+    for struct_field in df.schema:
+        if struct_field.name in column_list:
+            struct_field.nullable = nullable
+    df_mod = spark.createDataFrame(df.rdd, df.schema)
+    return df_mod

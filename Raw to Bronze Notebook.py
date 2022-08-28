@@ -14,6 +14,10 @@
 
 # COMMAND ----------
 
+dbutils.fs.rm(bronzePath, recurse=True)
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ## Merging JSON files
 # MAGIC First, we need to merge all the movie JSON files into one JSON file.
@@ -22,7 +26,6 @@
 
 from pyspark.sql.functions import explode, col, to_json
 movie_raw = spark.read.json(path = f"/FileStore/tables/sep/*", multiLine = True)
-#movie_raw = spark.read.json(path = dataPipelinePath + f"*", multiLine = True)
 movie_raw = movie_raw.select("movie", explode("movie"))
 movie_raw = movie_raw.drop(col("movie")).toDF('movie')
 
@@ -37,6 +40,10 @@ display(movie_raw)
 # MAGIC - `status`, as `new`
 # MAGIC - `ingesttime`
 # MAGIC - `ingestdate`
+
+# COMMAND ----------
+
+movie_raw = movie_raw.withColumn("movie", to_json("movie"))
 
 # COMMAND ----------
 
@@ -62,23 +69,26 @@ movie_raw = movie_raw.select(
 
 # COMMAND ----------
 
-(
-  movie_raw.withColumn("movie", to_json("movie"))
-    #.write.format("delta")
-    #.mode("append")
-    #.partitionBy("p_ingestdate")
-    #.save(bronzePath)
-)
+#movie_raw = movie_raw.withColumn("movie", to_json("movie"))
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
 (
 movie_raw.select("datasource", "ingesttime", "movie", "status", col("ingestdate").alias("p_ingestdate"))
+    #.withColumn("movie", to_json("movie"))
     .write.format("delta")
     .mode("append")
     .partitionBy("p_ingestdate")
     .save(bronzePath)
 )
+
+# COMMAND ----------
+
+movie_raw.printSchema()
 
 # COMMAND ----------
 
@@ -113,6 +123,11 @@ LOCATION "{bronzePath}"
 # COMMAND ----------
 
 display(movie_raw)
+
+# COMMAND ----------
+
+movies_bronze = spark.read.load(path = bronzePath)#.withColumn("movie", to_json("movie"))
+display(movies_bronze)
 
 # COMMAND ----------
 

@@ -35,7 +35,7 @@ display(dbutils.fs.ls(bronzePath))
 
 # COMMAND ----------
 
-movies_bronze = spark.read.load(path = bronzePath).withColumn("movie", to_json("movie"))
+movies_bronze = spark.read.load(path = bronzePath)#.withColumn("movie", to_json("movie"))
 display(movies_bronze)
 
 # COMMAND ----------
@@ -89,6 +89,12 @@ display(genres_silver)
 
 # COMMAND ----------
 
+movies_silver = movies_silver.withColumn("movie_genre_junction_id", monotonically_increasing_id()+1)
+movie_genre_junction_silver = get_movie_genre_junction_table(movies_silver)
+display(movie_genre_junction_silver)
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ## Update movie silver table with two look-up tables
 # MAGIC 
@@ -99,12 +105,19 @@ display(genres_silver)
 
 # COMMAND ----------
 
-# Didn't complete
-#movies_silver.join(language_silver, movies_silver("OriginalLanguage") == language_silver("OriginalLanguage"), "right"
+# Update with language silver table
+movies_silver = movies_silver.join(language_silver, movies_silver.OriginalLanguage == language_silver.OriginalLanguage, "inner").drop("OriginalLanguage")
+display(movies_silver)
 
 # COMMAND ----------
 
+# Update with movies-genres junction table
+movies_silver = movies_silver.drop("genres")
+display(movies_silver)
 
+# COMMAND ----------
+
+set_df_columns_nullable(spark, movies_silver,['Language_Id','movie_genre_junction_id'])
 
 # COMMAND ----------
 
@@ -121,29 +134,61 @@ from pyspark.sql.types import _parse_datatype_string
 
 assert movies_silver.schema == _parse_datatype_string(
     """
-   movie STRING,
-   BackdropUrl STRING,
-   Budget DOUBLE,
-   CreatedBy TIMESTAMP,
-   CreatedDate STRING,
-   Id LONG,
-   ImdbUrl STRING,
-   OriginalLanguage STRING,
-   Overview STRING,
-   PosterUrl STRING,
-   Price DOUBLE,
-   ReleaseTime TIMESTAMP,
-   ReleaseDate DATE,
-   ReleaseYear DATE,
-   Revenue DOUBLE,
-   RunTime LONG,
-   Tagline STRING,
-   Title STRING,
-   TmdbUrl STRING,
-   UpdatedBy TIMESTAMP,
-   UpdatedDate TIMESTAMP,
-   genres STRING
-"""
+    movie STRING,
+    BackdropUrl STRING,
+    Budget DOUBLE,
+    CreatedBy TIMESTAMP,
+    CreatedDate STRING,
+    Id LONG,
+    ImdbUrl STRING,
+    Overview STRING,
+    PosterUrl STRING,
+    Price DOUBLE,
+    ReleaseTime TIMESTAMP,
+    ReleaseDate DATE,
+    ReleaseYear DATE,
+    Revenue DOUBLE,
+    RunTime LONG,
+    Tagline STRING,
+    Title STRING,
+    TmdbUrl STRING,
+    UpdatedBy TIMESTAMP,
+    UpdatedDate TIMESTAMP,
+    movie_genre_junction_id long,
+    Language_Id long
+    """
+)
+print("Assertion passed.")
+
+# COMMAND ----------
+
+from pyspark.sql.types import _parse_datatype_string
+
+assert movies_silver.schema == _parse_datatype_string(
+    """
+    movie string,
+    BackdropUrl string,
+    Budget double,
+    CreatedBy timestamp,
+    CreatedDate string,
+    Id long,
+    ImdbUrl string,
+    Overview string,
+    PosterUrl string,
+    Price double,
+    ReleaseTime timestamp,
+    ReleaseDate date,
+    ReleaseYear date,
+    Revenue double,
+    RunTime long,
+    Tagline string,
+    Title string,
+    TmdbUrl string,
+    UpdatedBy timestamp,
+    UpdatedDate timestamp,
+    movie_genre_junction_id long,
+    Language_Id long
+    """
 )
 print("Assertion passed.")
 
@@ -194,10 +239,9 @@ display(movies_silver_quarantined)
 (
     movies_silver_clean.select(
         "BackdropUrl", "Budget", "CreatedBy", "CreatedDate",
-        "Id", "ImdbUrl", "OriginalLanguage", "Overview",
-        "PosterUrl", "Price", "ReleaseTime", "ReleaseDate",
-        "ReleaseYear", "Revenue", "RunTime", "Tagline",
-        "Title", "TmdbUrl", "UpdatedBy", "UpdatedDate", "genres"
+        "Id", "ImdbUrl", "Overview", "PosterUrl", "Price", "ReleaseTime", "ReleaseDate",
+        "ReleaseYear", "Revenue", "RunTime", "Tagline", "Title", "TmdbUrl", "UpdatedBy",
+        "UpdatedDate", "movie_genre_junction_id", "Language_Id"
     )
     .write.format("delta")
     .mode("append")
@@ -232,28 +276,27 @@ from pyspark.sql.types import _parse_datatype_string
 
 silverTable = spark.read.table("movies_silver")
 expected_schema = """
-   movie STRING,
-   BackdropUrl STRING,
-   Budget DOUBLE,
-   CreatedBy TIMESTAMP,
-   CreatedDate STRING,
-   Id LONG,
-   ImdbUrl STRING,
-   OriginalLanguage STRING,
-   Overview STRING,
-   PosterUrl STRING,
-   Price DOUBLE,
-   ReleaseTime TIMESTAMP,
-   ReleaseDate DATE,
-   ReleaseYear DATE,
-   Revenue DOUBLE,
-   RunTime LONG,
-   Tagline STRING,
-   Title STRING,
-   TmdbUrl STRING,
-   UpdatedBy TIMESTAMP,
-   UpdatedDate TIMESTAMP,
-   genres STRING
+    BackdropUrl string,
+    Budget double,
+    CreatedBy timestamp,
+    CreatedDate string,
+    Id long,
+    ImdbUrl string,
+    Overview string,
+    PosterUrl string,
+    Price double,
+    ReleaseTime timestamp,
+    ReleaseDate date,
+    ReleaseYear date,
+    Revenue double,
+    RunTime long,
+    Tagline string,
+    Title string,
+    TmdbUrl string,
+    UpdatedBy timestamp,
+    UpdatedDate timestamp,
+    movie_genre_junction_id long,
+    Language_Id long
 """
 
 assert silverTable.schema == _parse_datatype_string(
@@ -266,10 +309,6 @@ print("Assertion passed.")
 # MAGIC %sql
 # MAGIC 
 # MAGIC SELECT * FROM movies_silver
-
-# COMMAND ----------
-
-
 
 # COMMAND ----------
 
@@ -291,14 +330,31 @@ bronzeTable = DeltaTable.forPath(spark, bronzePath)
 silverAugmented = movies_silver_clean.withColumn("status", lit("loaded"))
 
 update_match = "bronze.movie = clean.movie"
-update = {"status": "clean"}
+update = {"status": "clean.status"}
 
 (
     bronzeTable.alias("bronze")
     .merge(silverAugmented.alias("clean"), update_match)
-    .whenMatchedUpdate(set=update)
+    .whenMatchedUpdate(set = update)
     .execute()
 )
+
+# COMMAND ----------
+
+movies_bronze = spark.read.load(path = bronzePath)
+movies_bronze.printSchema()
+
+silverAugmented.printSchema()
+
+# COMMAND ----------
+
+from pyspark.sql import DataFrame
+movies_silver_clean.printSchema()
+silverAugmented.printSchema()
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
@@ -324,6 +380,10 @@ update = {"status": "quarantine.status"}
     .whenMatchedUpdate(set=update)
     .execute()
 )
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
