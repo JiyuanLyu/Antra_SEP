@@ -60,7 +60,7 @@ display(movies_bronze)
 
 # COMMAND ----------
 
-movies_silver = movie_bronze_to_silver(movies_bronze)
+movies_silver = movie_bronze_to_silver(movies_bronze).distinct()
 display(movies_silver)
 
 # COMMAND ----------
@@ -281,6 +281,10 @@ print("Assertion passed.")
 # MAGIC %sql
 # MAGIC 
 # MAGIC SELECT * FROM movies_silver
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
