@@ -1,0 +1,9 @@
+{
+	"name": "antraSEP",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "4e097b96-7167-4691-accf-79e7f89f6df3",
+		"tenantId": "bd902dc3-6158-4b19-a3e7-0ade72d7e519"
+	}
+}
