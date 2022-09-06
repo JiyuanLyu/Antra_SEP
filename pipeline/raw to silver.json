@@ -31,7 +31,16 @@
 						"type": "JsonSink",
 						"storeSettings": {
 							"type": "AzureBlobFSWriteSettings",
-							"copyBehavior": "MergeFiles"
+							"copyBehavior": "MergeFiles",
+							"metadata": [
+								{
+									"name": "ingesttime",
+									"value": {
+										"value": "@utcnow()",
+										"type": "Expression"
+									}
+								}
+							]
 						},
 						"formatSettings": {
 							"type": "JsonWriteSettings"
