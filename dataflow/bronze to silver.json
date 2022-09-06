@@ -23,10 +23,7 @@
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false,",
 				"     format: 'parquet',",
-				"     partitionBy('key',",
-				"          0,",
-				"          ERROR_FUNCTION('')",
-				"     )) ~> source1",
+				"     wildcardPaths:[(\"ingestdate=2022-09-06\")]) ~> source1",
 				"source1 foldDown(unroll(),",
 				"     skipDuplicateMapInputs: false,",
 				"     skipDuplicateMapOutputs: false) ~> flatten1"
