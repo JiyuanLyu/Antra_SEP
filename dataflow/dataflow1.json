@@ -6,7 +6,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "Json1",
+						"referenceName": "raw_movie",
 						"type": "DatasetReference"
 					},
 					"name": "source1"
