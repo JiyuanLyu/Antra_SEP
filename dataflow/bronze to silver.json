@@ -13,17 +13,29 @@
 				}
 			],
 			"sinks": [],
-			"transformations": [],
+			"transformations": [
+				{
+					"name": "lookup1"
+				}
+			],
 			"scriptLines": [
-				"source(allowSchemaDrift: true,",
+				"source(output(",
+				"          movie as (Id as integer, Title as string, Overview as string, Tagline as string, Budget as double, Revenue as double, ImdbUrl as string, TmdbUrl as string, PosterUrl as string, BackdropUrl as string, OriginalLanguage as string, ReleaseDate as string, RunTime as integer, Price as double, CreatedDate as string, UpdatedDate as string, UpdatedBy as string, CreatedBy as string, genres as (id as integer, name as string)[]),",
+				"          datasource as string,",
+				"          status as string,",
+				"          ingesttime as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false,",
-				"     fileList: true,",
-				"     rowUrlColumn: 'movie',",
 				"     format: 'parquet',",
 				"     fileSystem: 'movie',",
-				"     compressionCodec: 'snappy',",
-				"     wildcardPaths:['\"ingestdate=2022-09-06\"']) ~> source1"
+				"     folderPath: 'ingestdate=2022-09-06',",
+				"     compressionCodec: 'none') ~> source1",
+				"source1 lookup(moviemovie.OriginalLanguage == ERROR_FUNCTION(''),",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookup1"
 			]
 		}
 	}
