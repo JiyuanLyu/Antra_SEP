@@ -1,0 +1,19 @@
+{
+	"name": "raw_movie",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "testadls",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileSystem": "movie"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}
