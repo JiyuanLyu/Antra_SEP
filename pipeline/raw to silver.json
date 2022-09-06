@@ -50,13 +50,13 @@
 				},
 				"inputs": [
 					{
-						"referenceName": "movie_0",
+						"referenceName": "movies",
 						"type": "DatasetReference"
 					}
 				],
 				"outputs": [
 					{
-						"referenceName": "movies",
+						"referenceName": "movie_0",
 						"type": "DatasetReference"
 					}
 				]
