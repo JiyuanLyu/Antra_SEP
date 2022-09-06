@@ -23,6 +23,14 @@
 								"FileName": "bronze_movie",
 								"FolderName": "movie"
 							}
+						},
+						"linkedServiceParameters": {
+							"sink1": {
+								"schemaLinkedService": {
+									"FileName": "bronze_movie",
+									"FolderName": "movie"
+								}
+							}
 						}
 					},
 					"compute": {
