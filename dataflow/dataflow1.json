@@ -24,6 +24,9 @@
 			"transformations": [
 				{
 					"name": "flatten1"
+				},
+				{
+					"name": "metadata"
 				}
 			],
 			"scriptLines": [
@@ -41,7 +44,11 @@
 				"     ),",
 				"     skipDuplicateMapInputs: false,",
 				"     skipDuplicateMapOutputs: false) ~> flatten1",
-				"flatten1 sink(allowSchemaDrift: true,",
+				"flatten1 derive(datasource = \"antra.sep.databatch.movieshop\",",
+				"          status = \"new\",",
+				"          ingesttime = currentTimestamp(),",
+				"          ingesetdate = currentDate()) ~> metadata",
+				"metadata sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     format: 'parquet',",
 				"     umask: 0022,",
