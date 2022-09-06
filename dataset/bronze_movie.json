@@ -1,5 +1,5 @@
 {
-	"name": "raw_movie",
+	"name": "bronze_movie",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "testadls",

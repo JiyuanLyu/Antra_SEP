@@ -15,7 +15,7 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "raw_movie",
+						"referenceName": "bronze_movie",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
