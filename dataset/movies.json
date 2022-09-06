@@ -2,7 +2,7 @@
 	"name": "movies",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "AzureDataLakeStorage1",
+			"referenceName": "blobantraadls",
 			"type": "LinkedServiceReference"
 		},
 		"parameters": {
@@ -20,8 +20,8 @@
 		"type": "Json",
 		"typeProperties": {
 			"location": {
-				"type": "AzureBlobFSLocation",
-				"fileSystem": "movie"
+				"type": "AzureBlobStorageLocation",
+				"container": "movie"
 			}
 		},
 		"schema": {
