@@ -51,7 +51,15 @@
 				"inputs": [
 					{
 						"referenceName": "movies",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"FolderName": "movie",
+							"PipelineRunDateTime": {
+								"value": "@utcnow()",
+								"type": "Expression"
+							},
+							"FileName": "movies"
+						}
 					}
 				],
 				"outputs": [
