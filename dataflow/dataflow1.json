@@ -18,7 +18,11 @@
 						"referenceName": "bronze_movie",
 						"type": "DatasetReference"
 					},
-					"name": "sink1"
+					"name": "sink1",
+					"rejectedDataLinkedService": {
+						"referenceName": "AzureDataLakeStorage1",
+						"type": "LinkedServiceReference"
+					}
 				}
 			],
 			"transformations": [

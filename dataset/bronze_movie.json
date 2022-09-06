@@ -5,12 +5,24 @@
 			"referenceName": "AzureDataLakeStorage1",
 			"type": "LinkedServiceReference"
 		},
+		"parameters": {
+			"FileName": {
+				"type": "string",
+				"defaultValue": "bronze_movie"
+			},
+			"PipelineRunDateTime": {
+				"type": "string"
+			},
+			"FolderName": {
+				"type": "string",
+				"defaultValue": "movie"
+			}
+		},
 		"annotations": [],
 		"type": "Parquet",
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"fileName": "bronze_movie.parquet",
 				"fileSystem": "movie"
 			},
 			"compressionCodec": "snappy"
