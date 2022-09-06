@@ -5,28 +5,25 @@
 		"typeProperties": {
 			"sources": [
 				{
-					"dataset": {
-						"referenceName": "bronze_movie",
-						"type": "DatasetReference"
+					"linkedService": {
+						"referenceName": "AzureDataLakeStorage1",
+						"type": "LinkedServiceReference"
 					},
 					"name": "source1"
 				}
 			],
 			"sinks": [],
-			"transformations": [
-				{
-					"name": "flatten1"
-				}
-			],
+			"transformations": [],
 			"scriptLines": [
 				"source(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false,",
+				"     fileList: true,",
+				"     rowUrlColumn: 'movie',",
 				"     format: 'parquet',",
-				"     wildcardPaths:[(\"ingestdate=2022-09-06\")]) ~> source1",
-				"source1 foldDown(unroll(),",
-				"     skipDuplicateMapInputs: false,",
-				"     skipDuplicateMapOutputs: false) ~> flatten1"
+				"     fileSystem: 'movie',",
+				"     compressionCodec: 'snappy',",
+				"     wildcardPaths:['\"ingestdate=2022-09-06\"']) ~> source1"
 			]
 		}
 	}
