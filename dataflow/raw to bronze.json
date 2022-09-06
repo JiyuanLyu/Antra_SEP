@@ -55,6 +55,7 @@
 				"derivedColumn1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     format: 'parquet',",
+				"     partitionFileNames:['bronze_movie'],",
 				"     umask: 0022,",
 				"     preCommands: [],",
 				"     postCommands: [],",

@@ -10,10 +10,6 @@
 				"type": "string",
 				"defaultValue": "bronze_movie"
 			},
-			"PipelineRunDateTime": {
-				"type": "string",
-				"defaultValue": "currentTimestamp()"
-			},
 			"FolderName": {
 				"type": "string",
 				"defaultValue": "movie"
